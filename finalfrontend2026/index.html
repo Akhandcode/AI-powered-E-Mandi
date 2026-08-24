@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OnionGuard AI — APMC Portal</title>
+    <script>
+      // Smart Fallback for VS Code Live Preview / Static file opening (Port 3002 or file://)
+      // Automatically redirects static previewers to the standalone vanilla/index.html preview
+      if (window.location.protocol === 'file:' || (window.location.port !== '8443' && !window.location.port.includes('8443') && !window.location.search.includes('vite'))) {
+        if (!window.location.pathname.includes('/vanilla/')) {
+          window.location.href = './vanilla/index.html';
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
