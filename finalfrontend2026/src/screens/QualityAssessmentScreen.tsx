@@ -14,7 +14,21 @@ function ProgressBar({ value, color, bg }: { value: number; color: string; bg: s
 }
 
 export default function QualityAssessmentScreen() {
-  const { navigate, inspectionData } = useApp();
+  const { navigate, inspectionData, assessmentResult } = useApp();
+
+  const commodity = inspectionData.commodity || 'Onion';
+  const commodityPlural = `${commodity.toLowerCase()}s`;
+
+  const gradeA = assessmentResult ? assessmentResult.grade_a_percentage : 0;
+  const urs = assessmentResult ? assessmentResult.urs_percentage : 0;
+  const lqi = assessmentResult ? Math.round(assessmentResult.lqi_score) : 0;
+
+  const damagedPct = assessmentResult ? assessmentResult.damaged_pct : 0;
+  const rottenPct = assessmentResult ? assessmentResult.rotten_pct : 0;
+  const sproutedPct = assessmentResult ? assessmentResult.sprouted_pct : 0;
+  const undersizedPct = assessmentResult ? assessmentResult.undersized_pct : 0;
+
+  const passed = gradeA >= 75;
 
   return (
     <div className="absolute inset-0 flex flex-col" style={{ background: '#F4F7F5' }}>
@@ -35,17 +49,19 @@ export default function QualityAssessmentScreen() {
           <div className="flex-1">
             <h1 className="font-bold text-white" style={{ fontSize: 18 }}>Quality Assessment</h1>
             <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11.5 }}>
-              {inspectionData.batchId || 'APMC-NAS-4722'} · {inspectionData.variety || 'Nasik Red'}
+              {inspectionData.batchId || 'APMC-NAS-4722'} · {inspectionData.variety || `${commodity} Standard`}
             </p>
           </div>
           <div
             style={{
-              background: 'rgba(74,222,128,0.18)',
-              border: '1px solid rgba(74,222,128,0.4)',
+              background: passed ? 'rgba(74,222,128,0.18)' : 'rgba(239,68,68,0.18)',
+              border: `1px solid ${passed ? 'rgba(74,222,128,0.4)' : 'rgba(239,68,68,0.4)'}`,
               borderRadius: 10, padding: '4px 10px',
             }}
           >
-            <span style={{ color: '#4ADE80', fontSize: 11, fontWeight: 700 }}>PASSED</span>
+            <span style={{ color: passed ? '#4ADE80' : '#FCA5A5', fontSize: 11, fontWeight: 700 }}>
+              {passed ? 'PASSED' : 'URS HEAVY'}
+            </span>
           </div>
         </div>
 
@@ -61,16 +77,16 @@ export default function QualityAssessmentScreen() {
                 className="font-bold"
                 style={{ fontSize: 56, color: 'white', lineHeight: 1, letterSpacing: '-2px' }}
               >
-                A
+                {gradeA >= 75 ? 'A' : gradeA >= 55 ? 'B' : 'C'}
               </p>
               <div className="flex items-center gap-2 mt-1">
                 <span
                   className="font-bold"
-                  style={{ fontSize: 26, color: '#4ADE80', letterSpacing: '-0.5px', lineHeight: 1 }}
+                  style={{ fontSize: 26, color: passed ? '#4ADE80' : '#FCA57B', letterSpacing: '-0.5px', lineHeight: 1 }}
                 >
-                  82%
+                  {gradeA}%
                 </span>
-                <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: 13 }}>qualifying onions</span>
+                <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: 13 }}>qualifying {commodityPlural}</span>
               </div>
             </div>
 
@@ -80,8 +96,8 @@ export default function QualityAssessmentScreen() {
                 <circle cx="44" cy="44" r="38" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="7" />
                 <circle
                   cx="44" cy="44" r="38" fill="none"
-                  stroke="#4ADE80" strokeWidth="7" strokeLinecap="round"
-                  strokeDasharray={`${(87 / 100) * 2 * Math.PI * 38} ${2 * Math.PI * 38}`}
+                  stroke={passed ? '#4ADE80' : '#FCA57B'} strokeWidth="7" strokeLinecap="round"
+                  strokeDasharray={`${(lqi / 100) * 2 * Math.PI * 38} ${2 * Math.PI * 38}`}
                   transform="rotate(-90 44 44)"
                 />
               </svg>
@@ -89,7 +105,7 @@ export default function QualityAssessmentScreen() {
                 className="absolute inset-0 flex flex-col items-center justify-center"
                 style={{ gap: 0 }}
               >
-                <span className="font-bold text-white" style={{ fontSize: 22, lineHeight: 1 }}>87</span>
+                <span className="font-bold text-white" style={{ fontSize: 22, lineHeight: 1 }}>{lqi}</span>
                 <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 9.5 }}>/ 100</span>
               </div>
             </div>
@@ -102,16 +118,16 @@ export default function QualityAssessmentScreen() {
           >
             <div
               className="flex flex-col items-center justify-center"
-              style={{ width: '82%', background: 'rgba(74,222,128,0.18)', borderRight: '1px solid rgba(255,255,255,0.1)' }}
+              style={{ width: `${Math.max(15, gradeA)}%`, background: 'rgba(74,222,128,0.18)', borderRight: '1px solid rgba(255,255,255,0.1)' }}
             >
-              <span className="font-bold text-white" style={{ fontSize: 17, lineHeight: 1 }}>82%</span>
+              <span className="font-bold text-white" style={{ fontSize: 17, lineHeight: 1 }}>{gradeA}%</span>
               <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 10, fontWeight: 600 }}>GRADE A</span>
             </div>
             <div
               className="flex flex-col items-center justify-center flex-1"
               style={{ background: 'rgba(232,101,10,0.22)' }}
             >
-              <span className="font-bold" style={{ fontSize: 17, color: '#FCA57B', lineHeight: 1 }}>18%</span>
+              <span className="font-bold" style={{ fontSize: 17, color: '#FCA57B', lineHeight: 1 }}>{urs}%</span>
               <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: 10, fontWeight: 600 }}>URS</span>
             </div>
           </div>
@@ -128,10 +144,10 @@ export default function QualityAssessmentScreen() {
         >
           <h3 className="font-bold mb-4" style={{ fontSize: 15, color: '#1A2F23' }}>Defect Breakdown</h3>
           {[
-            { label: 'Surface Damage', value: 8,  color: '#D97706', bg: '#FFFBEB' },
-            { label: 'Rotten Onions',  value: 5,  color: '#C0392B', bg: '#FDECEA' },
-            { label: 'Sprouted',       value: 5,  color: '#B45309', bg: '#FEF3C7' },
-            { label: 'Undersized',     value: 10, color: '#2563EB', bg: '#DBEAFE' },
+            { label: 'Surface Damage', value: damagedPct,  color: '#D97706', bg: '#FFFBEB' },
+            { label: `Rotten ${commodityPlural}`,  value: rottenPct,   color: '#C0392B', bg: '#FDECEA' },
+            { label: 'Sprouted / Blemished',       value: sproutedPct, color: '#B45309', bg: '#FEF3C7' },
+            { label: 'Undersized',     value: undersizedPct, color: '#2563EB', bg: '#DBEAFE' },
           ].map(({ label, value, color, bg }) => (
             <div key={label} className="mb-4">
               <div className="flex items-center justify-between mb-2">
@@ -143,7 +159,7 @@ export default function QualityAssessmentScreen() {
                 </div>
                 <span className="font-bold" style={{ fontSize: 14, color }}>{value}% defective</span>
               </div>
-              <ProgressBar value={value * 3} color={color} bg={bg} />
+              <ProgressBar value={Math.min(value * 4, 100)} color={color} bg={bg} />
             </div>
           ))}
 
@@ -154,11 +170,11 @@ export default function QualityAssessmentScreen() {
                 <div className="rounded-md" style={{ width: 28, height: 28, background: '#E8F5EE', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <div className="rounded-full" style={{ width: 10, height: 10, background: '#1B6B3A' }} />
                 </div>
-                <span className="font-medium" style={{ fontSize: 14, color: '#1A2F23' }}>Size Compliance</span>
+                <span className="font-medium" style={{ fontSize: 14, color: '#1A2F23' }}>Grade A Compliance</span>
               </div>
-              <span className="font-bold" style={{ fontSize: 14, color: '#1B6B3A' }}>82% compliant</span>
+              <span className="font-bold" style={{ fontSize: 14, color: '#1B6B3A' }}>{gradeA}% compliant</span>
             </div>
-            <ProgressBar value={82} color="#1B6B3A" bg="#E8F5EE" />
+            <ProgressBar value={gradeA} color="#1B6B3A" bg="#E8F5EE" />
           </div>
         </div>
 
@@ -178,11 +194,11 @@ export default function QualityAssessmentScreen() {
           </div>
           <div className="flex flex-col gap-3">
             {[
-              { text: 'Majority of onions within acceptable size range (≥ 45 mm)', ok: true },
-              { text: 'Low percentage of damaged onions (8%)', ok: true },
-              { text: 'Low percentage of rotten onions (5%)', ok: true },
-              { text: 'No significant quality deviation detected', ok: true },
-              { text: 'Some sprouted and undersized onions detected — recommend dispatch within 48 hrs', ok: false },
+              { text: `${gradeA}% of sample meets sound & standard quality parameters`, ok: gradeA >= 50 },
+              { text: `Surface damage rate: ${damagedPct}%`, ok: damagedPct <= 10 },
+              { text: `Rotten/spoilage rate: ${rottenPct}%`, ok: rottenPct <= 5 },
+              { text: assessmentResult?.recommended_channel ? `Recommended channel: ${assessmentResult.recommended_channel}` : 'Calculated based on Bayesian Dirichlet lot estimator', ok: true },
+              { text: undersizedPct > 5 ? `${undersizedPct}% undersized units detected — recommend grading before dispatch` : 'Standard sizing compliance satisfied', ok: undersizedPct <= 5 },
             ].map(({ text, ok }) => (
               <div
                 key={text}
@@ -209,14 +225,16 @@ export default function QualityAssessmentScreen() {
             className="flex items-center justify-center rounded-full font-bold text-white flex-shrink-0"
             style={{ width: 38, height: 38, background: 'rgba(255,255,255,0.18)', fontSize: 18 }}
           >
-            ✓
+            {passed ? '✓' : '!'}
           </div>
           <div>
             <p className="font-bold text-white" style={{ fontSize: 13.5 }}>
-              APMC Grade A Standard: Passed
+              APMC Grade Standard: {passed ? 'Passed (Grade A)' : 'Standard / URS Grade'}
             </p>
             <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, lineHeight: 1.5, marginTop: 2 }}>
-              Meets minimum Grade A threshold of 75% required under MSAMB guidelines.
+              {passed
+                ? 'Meets minimum Grade A threshold of 75% required under MSAMB/DoCA guidelines.'
+                : 'Allocated for spot wholesale or processing industry based on optimal net returns.'}
             </p>
           </div>
         </div>

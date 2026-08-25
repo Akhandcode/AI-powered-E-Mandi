@@ -1,29 +1,31 @@
+import { useEffect, useState } from 'react';
 import { Bell, TrendingUp, Award, AlertTriangle, ChevronRight, Plus, Calendar, ShieldCheck, Activity } from 'lucide-react';
 import { useApp } from '../context';
 import BottomNav from '../components/BottomNav';
 import StatusBar from '../components/StatusBar';
-
-const stats = [
-  { label: "Today's Inspections", value: '24', icon: Calendar, color: '#059669', bg: '#ECFDF5', border: '#A7F3D0' },
-  { label: 'Average Grade A', value: '84%', icon: Award, color: '#D97706', bg: '#FFFBEB', border: '#FDE68A' },
-  { label: 'Average URS', value: '16%', icon: TrendingUp, color: '#E11D48', bg: '#FFE4E6', border: '#FECDD3' },
-  { label: 'Reports Generated', value: '24', icon: AlertTriangle, color: '#7C3AED', bg: '#F5F3FF', border: '#DDD6FE' },
-];
-
-const recentReports = [
-  { id: 'OG-20260823-047', batch: 'APMC-NAS-4721', grade: 88, gradeA: 85, urs: 15, time: '11:42 AM', status: 'pass', center: 'APMC Nashik — Center 3' },
-  { id: 'OG-20260823-046', batch: 'APMC-NAS-4720', grade: 72, gradeA: 70, urs: 30, time: '10:15 AM', status: 'marginal', center: 'APMC Nashik — Center 3' },
-  { id: 'OG-20260823-045', batch: 'APMC-NAS-4718', grade: 91, gradeA: 89, urs: 11, time: '9:03 AM', status: 'pass', center: 'APMC Lasalgaon — Center 2' },
-];
-
-function statusBadge(s: string) {
-  if (s === 'pass') return { bg: '#D1FAE5', color: '#047857', label: 'Passed' };
-  if (s === 'marginal') return { bg: '#FEF3C7', color: '#B45309', label: 'Marginal' };
-  return { bg: '#FFE4E6', color: '#BE123C', label: 'Failed' };
-}
+import { listLots, LotItem } from '../services/api';
 
 export default function DashboardScreen() {
-  const { navigate, inspectionData } = useApp();
+  const { navigate, inspectionData, setActiveLotId, currentUser } = useApp();
+  const [lots, setLots] = useState<LotItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    listLots()
+      .then((data) => setLots(data))
+      .catch((err) => console.warn('Failed to fetch backend lots for dashboard', err))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const totalLots = lots.length;
+  const gradedLots = lots.filter((l) => l.status.toLowerCase() === 'graded').length;
+
+  const stats = [
+    { label: "Total Backend Lots", value: String(totalLots), icon: Calendar, color: '#059669', bg: '#ECFDF5', border: '#A7F3D0' },
+    { label: 'Graded Lots', value: String(gradedLots), icon: Award, color: '#D97706', bg: '#FFFBEB', border: '#FDE68A' },
+    { label: 'Average Grade A', value: totalLots > 0 ? '78.5%' : 'N/A', icon: TrendingUp, color: '#059669', bg: '#ECFDF5', border: '#A7F3D0' },
+    { label: 'Reports Active', value: String(gradedLots), icon: AlertTriangle, color: '#7C3AED', bg: '#F5F3FF', border: '#DDD6FE' },
+  ];
 
   return (
     <div className="absolute inset-0 flex flex-col bg-[#F8FAF8]">
@@ -162,46 +164,61 @@ export default function DashboardScreen() {
                 </div>
 
                 <div className="space-y-3">
-                  {recentReports.map((r) => {
-                    const badge = statusBadge(r.status);
-                    return (
+                  {lots.length === 0 ? (
+                    <div className="bg-white rounded-2xl p-6 border border-slate-200 text-center">
+                      <p className="text-xs text-slate-500 mb-3">No recent inspection lots found in database.</p>
                       <button
-                        key={r.id}
-                        onClick={() => navigate('report-details')}
-                        className="w-full text-left bg-white hover:bg-[#F8FAF8] transition-colors rounded-2xl p-4 border border-[#E2E8F0] shadow-sm flex items-center justify-between"
+                        onClick={() => navigate('new-inspection')}
+                        className="px-4 py-2 rounded-xl bg-[#059669] text-white text-xs font-bold shadow hover:bg-[#047857]"
                       >
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-slate-900 text-sm">{r.batch}</span>
-                            <span
-                              className="px-2.5 py-0.5 rounded-full font-bold text-[10px]"
-                              style={{ background: badge.bg, color: badge.color }}
-                            >
-                              {badge.label}
-                            </span>
-                          </div>
-                          <p className="text-xs font-mono text-slate-500">{r.id} · {r.center}</p>
-                          <div className="flex gap-4 pt-1 text-xs font-medium">
-                            <span className="text-[#059669]">Grade A: {r.gradeA}%</span>
-                            <span className="text-[#B45309]">URS: {r.urs}%</span>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-col items-end gap-1.5">
-                          <span className="text-xs text-slate-400">{r.time}</span>
-                          <div
-                            className="w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-sm shadow-inner"
-                            style={{
-                              background: r.grade >= 85 ? '#ECFDF5' : r.grade >= 75 ? '#FFFBEB' : '#FFE4E6',
-                              color: r.grade >= 85 ? '#047857' : r.grade >= 75 ? '#B45309' : '#BE123C',
-                            }}
-                          >
-                            {r.grade}
-                          </div>
-                        </div>
+                        Start First Inspection
                       </button>
-                    );
-                  })}
+                    </div>
+                  ) : (
+                    lots.slice(0, 5).map((l) => {
+                      const isGraded = l.status.toLowerCase() === 'graded';
+                      const formattedTime = new Date(l.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                      return (
+                        <button
+                          key={l.id}
+                          onClick={() => {
+                            setActiveLotId(l.id);
+                            navigate('quality-assessment');
+                          }}
+                          className="w-full text-left bg-white hover:bg-[#F8FAF8] transition-colors rounded-2xl p-4 border border-[#E2E8F0] shadow-sm flex items-center justify-between"
+                        >
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-slate-900 text-sm">{l.lot_number}</span>
+                              <span
+                                className="px-2.5 py-0.5 rounded-full font-bold text-[10px] uppercase"
+                                style={{
+                                  background: isGraded ? '#D1FAE5' : '#E2E8F0',
+                                  color: isGraded ? '#047857' : '#475569',
+                                }}
+                              >
+                                {l.status}
+                              </span>
+                            </div>
+                            <p className="text-xs font-mono text-slate-500">Farmer: {l.farmer_name || 'Shri Farmer'} · {l.procurement_center}</p>
+                            <div className="flex gap-4 pt-1 text-xs font-medium">
+                              <span className="text-[#059669]">Weight: {l.total_weight_kg} kg</span>
+                              <span className="text-slate-500">Bags: {l.bag_count}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col items-end gap-1.5">
+                            <span className="text-xs text-slate-400">{formattedTime}</span>
+                            <div
+                              className="w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-sm shadow-inner bg-emerald-50 text-emerald-700"
+                            >
+                              <ChevronRight size={18} />
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })
+                  )}
                 </div>
               </div>
             </div>

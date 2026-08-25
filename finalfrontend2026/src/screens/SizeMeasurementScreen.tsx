@@ -2,63 +2,34 @@ import { ArrowLeft, ChevronRight, Ruler } from 'lucide-react';
 import { useApp } from '../context';
 import StatusBar from '../components/StatusBar';
 
-const AVG_DIAM = 5.4;
-const COMPLIANCE = 90;
-
-const distribution = [
-  { range: 'Below 4.5 cm', pct: 5,  color: '#60A5FA', bg: '#DBEAFE', label: 'Undersized' },
-  { range: '4.5 – 6.5 cm', pct: 90, color: '#16A34A', bg: '#DCFCE7', label: 'Grade A' },
-  { range: 'Above 6.5 cm', pct: 5,  color: '#D97706', bg: '#FEF3C7', label: 'Oversize' },
-];
-
-/* SVG bar chart: 5-segment histogram approximation */
-function SizeHistogram() {
-  const bars = [
-    { x: 12,  pct: 4,  color: '#60A5FA' },
-    { x: 60,  pct: 7,  color: '#60A5FA' },
-    { x: 108, pct: 62, color: '#16A34A' },
-    { x: 156, pct: 90, color: '#16A34A' },
-    { x: 204, pct: 70, color: '#16A34A' },
-    { x: 252, pct: 10, color: '#D97706' },
-    { x: 300, pct: 4,  color: '#D97706' },
-  ];
-  const maxH = 80;
-  return (
-    <svg width="100%" height="100" viewBox="0 0 348 100" preserveAspectRatio="xMidYMax meet">
-      {/* Gridlines */}
-      {[0, 25, 50, 75, 100].map((g) => (
-        <line key={g} x1="0" y1={100 - g} x2="348" y2={100 - g}
-          stroke="#E2EBE5" strokeWidth="1" strokeDasharray="4 3" />
-      ))}
-      {bars.map((b, i) => {
-        const h = (b.pct / 100) * maxH;
-        return (
-          <rect
-            key={i}
-            x={b.x} y={100 - h - 8} width={34} height={h}
-            rx="5" fill={b.color} opacity="0.85"
-          />
-        );
-      })}
-      {/* Axis labels */}
-      {['3.0', '3.5', '4.0', '4.5', '5.0', '5.5', '6.0'].map((label, i) => (
-        <text key={label} x={12 + i * 48 + 17} y={98} textAnchor="middle"
-          fontSize="7.5" fill="#8EA899" fontFamily="JetBrains Mono,monospace">
-          {label}
-        </text>
-      ))}
-      {/* Average line */}
-      <line x1="192" y1="8" x2="192" y2="92" stroke="#1B6B3A" strokeWidth="1.5" strokeDasharray="4 3" />
-      <rect x="176" y="2" width="42" height="12" rx="3" fill="#1B6B3A" />
-      <text x="197" y="11" textAnchor="middle" fontSize="7.5" fill="white" fontWeight="700" fontFamily="Outfit,sans-serif">
-        Avg 5.4
-      </text>
-    </svg>
-  );
-}
-
 export default function SizeMeasurementScreen() {
-  const { navigate, inspectionData } = useApp();
+  const { navigate, inspectionData, assessmentResult } = useApp();
+
+  const commodity = inspectionData.commodity || 'Onion';
+  const batchId = inspectionData.batchId || 'APMC-NAS-4722';
+  const totalCount = assessmentResult?.sample_count || 16;
+  const avgDiam = assessmentResult?.avg_diam || 5.4;
+  const compliance = assessmentResult?.size_compliance ?? (assessmentResult?.grade_a_percentage || 85);
+  const undersizedPct = assessmentResult?.undersized_pct ?? 5;
+  const gradeAPct = compliance;
+  const oversizePct = Math.max(0, 100 - gradeAPct - undersizedPct);
+
+  const distribution = [
+    { range: 'Below 4.5 cm', pct: undersizedPct, color: '#60A5FA', bg: '#DBEAFE', label: 'Undersized' },
+    { range: '4.5 – 6.5 cm', pct: gradeAPct, color: '#16A34A', bg: '#DCFCE7', label: 'Grade A' },
+    { range: 'Above 6.5 cm', pct: oversizePct, color: '#D97706', bg: '#FEF3C7', label: 'Oversize' },
+  ];
+
+  // Dynamic 7-bar histogram distribution scaled to sample sizes
+  const bars = [
+    { x: 12, pct: Math.min(30, undersizedPct * 0.4), color: '#60A5FA' },
+    { x: 60, pct: Math.min(45, undersizedPct * 0.8), color: '#60A5FA' },
+    { x: 108, pct: Math.min(95, gradeAPct * 0.65), color: '#16A34A' },
+    { x: 156, pct: Math.min(100, gradeAPct * 0.95), color: '#16A34A' },
+    { x: 204, pct: Math.min(85, gradeAPct * 0.70), color: '#16A34A' },
+    { x: 252, pct: Math.min(35, oversizePct * 0.8), color: '#D97706' },
+    { x: 300, pct: Math.min(20, oversizePct * 0.4), color: '#D97706' },
+  ];
 
   return (
     <div className="absolute inset-0 flex flex-col" style={{ background: '#F4F7F5' }}>
@@ -74,10 +45,10 @@ export default function SizeMeasurementScreen() {
           </button>
           <div className="flex-1">
             <h1 className="font-bold text-white" style={{ fontSize: 20, letterSpacing: '-0.3px' }}>
-              Size Measurement
+              Size & Caliber Sizing
             </h1>
             <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>
-              APMC-NAS-4722 · Computer vision sizing
+              {batchId} · Computer Vision Caliber Analysis
             </p>
           </div>
           <div
@@ -103,14 +74,14 @@ export default function SizeMeasurementScreen() {
           {inspectionData.capturedImage ? (
             <img
               src={inspectionData.capturedImage}
-              alt="Onion size measurement"
+              alt={`${commodity} size measurement`}
               style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center bg-[#0B2515]/90 text-center p-4">
               <div>
                 <p className="text-[#4ADE80] font-mono text-[10px] font-bold mb-1">AI DIAMETER CALIBRATION</p>
-                <p className="text-white font-extrabold text-sm">Average Diameter: 5.4 cm</p>
+                <p className="text-white font-extrabold text-sm">Average Diameter: {avgDiam} cm</p>
               </div>
             </div>
           )}
@@ -122,7 +93,7 @@ export default function SizeMeasurementScreen() {
             viewBox="0 0 390 200"
             preserveAspectRatio="xMidYMid slice"
           >
-            {/* Selected onion circle */}
+            {/* Selected produce item circle */}
             <circle cx="195" cy="100" r="44" fill="transparent"
               stroke="#4ADE80" strokeWidth="2.5" strokeDasharray="8 4" />
             {/* Diameter measurement line */}
@@ -133,13 +104,13 @@ export default function SizeMeasurementScreen() {
             <line x1="239" y1="92" x2="239" y2="108"
               stroke="#FACC15" strokeWidth="2" />
             {/* Diameter label */}
-            <rect x="167" y="82" width="56" height="16" rx="4" fill="rgba(250,204,21,0.85)" />
+            <rect x="167" y="82" width="56" height="16" rx="4" fill="rgba(250,204,21,0.9)" />
             <text x="195" y="93" textAnchor="middle" fontSize="9" fontWeight="800"
               fontFamily="JetBrains Mono,monospace" fill="#1A1A0A">
-              5.4 cm
+              {avgDiam} cm
             </text>
 
-            {/* Reference coin */}
+            {/* Reference coin / caliber */}
             <circle cx="330" cy="155" r="16" fill="transparent" stroke="rgba(255,255,255,0.7)" strokeWidth="1.5" />
             <text x="330" y="159" textAnchor="middle" fontSize="7.5" fill="white" fontWeight="700" fontFamily="Outfit,sans-serif">REF</text>
 
@@ -152,7 +123,7 @@ export default function SizeMeasurementScreen() {
           <div style={{ position: 'absolute', top: 10, left: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
             <Ruler size={14} color="#FACC15" strokeWidth={2} />
             <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-mono)' }}>
-              MEASURING — 20 ONIONS
+              MEASURING — {totalCount} {commodity.toUpperCase()}S
             </span>
           </div>
         </div>
@@ -161,24 +132,24 @@ export default function SizeMeasurementScreen() {
         <div className="grid grid-cols-2 gap-2.5 mx-4 mt-3">
           <div className="rounded-2xl p-4" style={{ background: 'white', boxShadow: '0 1px 8px rgba(0,0,0,0.05)' }}>
             <p style={{ fontSize: 12, color: '#5E7468', marginBottom: 4 }}>Average Diameter</p>
-            <p className="font-bold" style={{ fontSize: 30, color: '#1A2F23', lineHeight: 1 }}>{AVG_DIAM}</p>
-            <p style={{ fontSize: 11.5, color: '#5E7468', marginTop: 3 }}>cm per onion</p>
+            <p className="font-bold" style={{ fontSize: 30, color: '#1A2F23', lineHeight: 1 }}>{avgDiam}</p>
+            <p style={{ fontSize: 11.5, color: '#5E7468', marginTop: 3 }}>cm per unit</p>
           </div>
           <div
             className="rounded-2xl p-4"
             style={{
-              background: COMPLIANCE >= 75 ? '#DCFCE7' : '#FEE2E2',
+              background: compliance >= 75 ? '#DCFCE7' : '#FEE2E2',
               boxShadow: '0 1px 8px rgba(0,0,0,0.05)',
             }}
           >
-            <p style={{ fontSize: 12, color: COMPLIANCE >= 75 ? '#15803D' : '#DC2626', marginBottom: 4, fontWeight: 600 }}>
+            <p style={{ fontSize: 12, color: compliance >= 75 ? '#15803D' : '#DC2626', marginBottom: 4, fontWeight: 600 }}>
               Size Compliance
             </p>
-            <p className="font-bold" style={{ fontSize: 30, color: COMPLIANCE >= 75 ? '#15803D' : '#DC2626', lineHeight: 1 }}>
-              {COMPLIANCE}%
+            <p className="font-bold" style={{ fontSize: 30, color: compliance >= 75 ? '#15803D' : '#DC2626', lineHeight: 1 }}>
+              {compliance}%
             </p>
-            <p style={{ fontSize: 11.5, color: COMPLIANCE >= 75 ? '#15803D' : '#DC2626', marginTop: 3 }}>
-              meet Grade A size
+            <p style={{ fontSize: 11.5, color: compliance >= 75 ? '#15803D' : '#DC2626', marginTop: 3 }}>
+              meet Grade A size (≥ 4.5 cm)
             </p>
           </div>
         </div>
@@ -189,10 +160,38 @@ export default function SizeMeasurementScreen() {
           style={{ background: 'white', boxShadow: '0 1px 8px rgba(0,0,0,0.05)' }}
         >
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold" style={{ fontSize: 15, color: '#1A2F23' }}>Size Distribution</h3>
+            <h3 className="font-bold" style={{ fontSize: 15, color: '#1A2F23' }}>Caliber Distribution Curve</h3>
             <span style={{ fontSize: 11, color: '#5E7468' }}>diameter (cm)</span>
           </div>
-          <SizeHistogram />
+
+          <svg width="100%" height="100" viewBox="0 0 348 100" preserveAspectRatio="xMidYMax meet">
+            {[0, 25, 50, 75, 100].map((g) => (
+              <line key={g} x1="0" y1={100 - g} x2="348" y2={100 - g}
+                stroke="#E2EBE5" strokeWidth="1" strokeDasharray="4 3" />
+            ))}
+            {bars.map((b, i) => {
+              const h = (b.pct / 100) * 80;
+              return (
+                <rect
+                  key={i}
+                  x={b.x} y={100 - h - 8} width={34} height={Math.max(4, h)}
+                  rx="5" fill={b.color} opacity="0.85"
+                />
+              );
+            })}
+            {['3.0', '3.5', '4.0', '4.5', '5.0', '5.5', '6.0'].map((label, i) => (
+              <text key={label} x={12 + i * 48 + 17} y={98} textAnchor="middle"
+                fontSize="7.5" fill="#8EA899" fontFamily="JetBrains Mono,monospace">
+                {label}
+              </text>
+            ))}
+            <line x1="192" y1="8" x2="192" y2="92" stroke="#1B6B3A" strokeWidth="1.5" strokeDasharray="4 3" />
+            <rect x="176" y="2" width="42" height="12" rx="3" fill="#1B6B3A" />
+            <text x="197" y="11" textAnchor="middle" fontSize="7.5" fill="white" fontWeight="700" fontFamily="Outfit,sans-serif">
+              Avg {avgDiam}
+            </text>
+          </svg>
+
           <div className="flex gap-3 mt-3 flex-wrap">
             {[
               { color: '#60A5FA', label: 'Undersized (< 4.5 cm)' },
@@ -245,9 +244,9 @@ export default function SizeMeasurementScreen() {
           >
             <span style={{ fontSize: 14 }}>ℹ️</span>
             <p style={{ fontSize: 12, color: '#1B6B3A', lineHeight: 1.5 }}>
-              APMC Grade A requires minimum{' '}
+              APMC Grade A standard requires minimum{' '}
               <strong>45 mm (4.5 cm)</strong>. This batch avg is{' '}
-              <strong>54 mm</strong> — 90% of onions meet the standard.
+              <strong>{Math.round(avgDiam * 10)} mm ({avgDiam} cm)</strong> — {compliance}% of {commodity.toLowerCase()}s meet the standard.
             </p>
           </div>
         </div>
@@ -261,7 +260,7 @@ export default function SizeMeasurementScreen() {
             Measurement Method
           </p>
           <p style={{ fontSize: 12.5, color: '#5E7468', lineHeight: 1.6 }}>
-            AI model measures each onion diameter using the 50 mm reference marker visible in the capture frame. Measurements are calibrated per-frame and cross-validated across all detected onions.
+            AI vision measures each {commodity.toLowerCase()} diameter using calibrated reference scale markers in the capture frame. Measurements are computed per-item and cross-validated across the entire sample batch.
           </p>
         </div>
       </div>

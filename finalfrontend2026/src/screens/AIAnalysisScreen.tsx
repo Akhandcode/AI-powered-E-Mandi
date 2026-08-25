@@ -2,39 +2,54 @@ import { useEffect, useState } from 'react';
 import { CheckCircle, Loader } from 'lucide-react';
 import { useApp } from '../context';
 import OnionLogo from '../components/OnionLogo';
-
-const steps = [
-  'Detecting onions',
-  'Measuring size',
-  'Detecting defects',
-  'Classifying quality',
-  'Calculating Grade A / URS',
-  'Generating report',
-];
+import { runAIAssessment } from '../services/api';
 
 export default function AIAnalysisScreen() {
-  const { navigate } = useApp();
+  const { navigate, inspectionData, activeLotId, setAssessmentResult } = useApp();
   const [currentStep, setCurrentStep] = useState(0);
   const [progress, setProgress] = useState(0);
 
+  const commodity = inspectionData.commodity || 'Produce';
+
+  const steps = [
+    `Detecting ${commodity.toLowerCase()} items`,
+    'Measuring caliber & diameter',
+    'Classifying defects (rot, sprouts, cuts)',
+    'Computing Bayesian Dirichlet lot inference',
+    'Calculating Grade A & URS compliance',
+    'Generating tamper-evident cryptographic report',
+  ];
+
   useEffect(() => {
+    // Run backend AI assessment if active lot exists
+    if (activeLotId) {
+      runAIAssessment(activeLotId, 40, true)
+        .then((res) => {
+          setAssessmentResult(res);
+        })
+        .catch((err) => {
+          console.warn('Backend live assessment fallback:', err);
+        });
+    }
+
     const interval = setInterval(() => {
       setProgress((p) => {
-        const next = p + 1.8;
+        const next = p + 2.0;
         if (next >= 100) {
           clearInterval(interval);
-          setTimeout(() => navigate('ai-detection-results'), 600);
+          setTimeout(() => navigate('ai-detection-results'), 500);
           return 100;
         }
         return next;
       });
-    }, 60);
+    }, 55);
+
     return () => clearInterval(interval);
-  }, [navigate]);
+  }, [navigate, activeLotId, setAssessmentResult]);
 
   useEffect(() => {
     setCurrentStep(Math.min(Math.floor((progress / 100) * steps.length), steps.length - 1));
-  }, [progress]);
+  }, [progress, steps.length]);
 
   return (
     <div
@@ -63,7 +78,7 @@ export default function AIAnalysisScreen() {
         Analyzing Sample…
       </h2>
       <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13.5, marginBottom: 40 }}>
-        AI model processing your batch
+        AI model processing {commodity} batch ({inspectionData.batchId || 'APMC-NAS-4722'})
       </p>
 
       {/* Circular progress */}
@@ -118,7 +133,7 @@ export default function AIAnalysisScreen() {
                 <span
                   className="font-medium"
                   style={{
-                    fontSize: 14,
+                    fontSize: 13.5,
                     color: done ? '#4ADE80' : active ? 'white' : 'rgba(255,255,255,0.35)',
                     transition: 'color 0.3s',
                   }}

@@ -3,24 +3,63 @@ import { ArrowLeft, ChevronDown, Camera, CheckCircle } from 'lucide-react';
 import { useApp } from '../context';
 import StatusBar from '../components/StatusBar';
 
+import { createLot } from '../services/api';
+
 const centers = ['APMC Nashik — Center 3', 'APMC Pune — Center 1', 'APMC Lasalgaon — Center 2'];
-const varieties = ['Nasik Red', 'Bellary Red', 'Patna White', 'Agrifound Dark Red', 'N-53'];
+
+const commodityVarieties: Record<'Onion' | 'Potato' | 'Tomato', string[]> = {
+  Onion: ['Nasik Red', 'Bellary Red', 'Patna White', 'Agrifound Dark Red', 'N-53'],
+  Potato: ['Kufri Jyoti', 'Kufri Chandramukhi', 'Kufri Bahar', 'Kufri Lauvkar'],
+  Tomato: ['Pusa Ruby', 'Arka Vikas', 'Abhinav', 'Heemsona'],
+};
 
 export default function NewInspectionScreen() {
-  const { navigate, setInspectionData } = useApp();
+  const { navigate, setInspectionData, setActiveLotId, currentUser } = useApp();
+  const [loading, setLoading] = useState(false);
+  const [commodity, setCommodity] = useState<'Onion' | 'Potato' | 'Tomato'>('Onion');
   const [form, setForm] = useState({
-    batchId: `APMC-NAS-${4722 + Math.floor(Math.random() * 10)}`,
-    center: 'APMC Nashik — Center 3',
-    inspector: 'Rajesh Kumar',
+    batchId: `LOT-ONION-${Math.floor(1000 + Math.random() * 9000)}`,
+    center: currentUser?.center_id ? `APMC Center ${currentUser.center_id}` : 'APMC Lasalgaon Procurement Center',
+    inspector: currentUser?.name || 'Inspection Officer',
+    farmerName: 'Shri Ramesh Patil',
     variety: 'Nasik Red',
     quantity: '',
   });
 
-  const valid = form.batchId && form.center && form.inspector && form.variety && form.quantity;
+  const handleCommodityChange = (newCommodity: 'Onion' | 'Potato' | 'Tomato') => {
+    setCommodity(newCommodity);
+    const newVarieties = commodityVarieties[newCommodity];
+    setForm(prev => ({
+      ...prev,
+      batchId: `LOT-${newCommodity.toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`,
+      variety: newVarieties[0] || '',
+    }));
+  };
 
-  const handleContinue = () => {
-    setInspectionData(form);
-    navigate('capture-sample');
+  const valid = form.batchId && form.center && form.inspector && form.farmerName && form.variety && form.quantity;
+
+  const handleContinue = async () => {
+    setLoading(true);
+    try {
+      const created = await createLot({
+        procurement_center: form.center,
+        commodity: commodity,
+        variety: form.variety,
+        total_weight_kg: Number(form.quantity) || 100,
+        bag_count: 20,
+        farmer_name: form.farmerName || 'Farmer',
+      });
+      setActiveLotId(created.id);
+    } catch (e) {
+      console.warn('Backend server offline or unauthenticated, continuing in prototype mode', e);
+    } finally {
+      setLoading(false);
+      setInspectionData({
+        ...form,
+        commodity,
+      });
+      navigate('capture-sample');
+    }
   };
 
   return (
@@ -79,6 +118,29 @@ export default function NewInspectionScreen() {
             Batch Information
           </h2>
 
+          {/* Commodity Selection */}
+          <div className="mb-4">
+            <label className="block font-semibold mb-2" style={{ fontSize: 13, color: '#1A2F23' }}>
+              Commodity
+            </label>
+            <div
+              className="flex items-center gap-3 rounded-xl px-4"
+              style={{ height: 52, border: '1.5px solid #1B6B3A', background: '#F8FAF9' }}
+            >
+              <select
+                value={commodity}
+                onChange={(e) => handleCommodityChange(e.target.value as 'Onion' | 'Potato' | 'Tomato')}
+                className="flex-1 bg-transparent outline-none appearance-none font-semibold text-[#1B6B3A]"
+                style={{ fontSize: 14 }}
+              >
+                <option value="Onion">🧅 Onion</option>
+                <option value="Potato">🥔 Potato</option>
+                <option value="Tomato">🍅 Tomato</option>
+              </select>
+              <ChevronDown size={16} style={{ color: '#1B6B3A', flexShrink: 0 }} />
+            </div>
+          </div>
+
           {/* Batch ID — auto-generated */}
           <div className="mb-4">
             <label className="block font-semibold mb-2" style={{ fontSize: 13, color: '#1A2F23' }}>
@@ -111,7 +173,7 @@ export default function NewInspectionScreen() {
             </label>
             <div
               className="flex items-center gap-3 rounded-xl px-4"
-              style={{ height: 52, border: '1.5px solid #1B6B3A', background: '#F8FAF9' }}
+              style={{ height: 52, border: '1.5px solid #D4E4DA', background: '#F8FAF9' }}
             >
               <select
                 value={form.center}
@@ -144,10 +206,30 @@ export default function NewInspectionScreen() {
             </div>
           </div>
 
-          {/* Onion Variety */}
+          {/* Farmer Name */}
           <div className="mb-4">
             <label className="block font-semibold mb-2" style={{ fontSize: 13, color: '#1A2F23' }}>
-              Onion Variety
+              Farmer / Seller Name
+            </label>
+            <div
+              className="flex items-center rounded-xl px-4"
+              style={{ height: 52, border: '1.5px solid #D4E4DA', background: '#F8FAF9' }}
+            >
+              <input
+                type="text"
+                placeholder="e.g. Shri Ramesh Patil"
+                value={form.farmerName}
+                onChange={(e) => setForm({ ...form, farmerName: e.target.value })}
+                className="flex-1 bg-transparent outline-none"
+                style={{ fontSize: 14, color: '#1A2F23' }}
+              />
+            </div>
+          </div>
+
+          {/* Variety */}
+          <div className="mb-4">
+            <label className="block font-semibold mb-2" style={{ fontSize: 13, color: '#1A2F23' }}>
+              {commodity} Variety
             </label>
             <div
               className="flex items-center gap-3 rounded-xl px-4"
@@ -159,7 +241,7 @@ export default function NewInspectionScreen() {
                 className="flex-1 bg-transparent outline-none appearance-none"
                 style={{ fontSize: 14, color: '#1A2F23' }}
               >
-                {varieties.map((v) => <option key={v}>{v}</option>)}
+                {commodityVarieties[commodity].map((v) => <option key={v} value={v}>{v}</option>)}
               </select>
               <ChevronDown size={16} style={{ color: '#5E7468', flexShrink: 0 }} />
             </div>

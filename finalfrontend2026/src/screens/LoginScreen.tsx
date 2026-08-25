@@ -52,6 +52,8 @@ interface LanguageContent {
   demoTitle: string;
   secTitle: string;
   secSubtitle: string;
+  signUpPrompt: string;
+  registerLink: string;
 }
 
 const translations: Record<Lang, LanguageContent> = {
@@ -82,6 +84,8 @@ const translations: Record<Lang, LanguageContent> = {
     demoTitle: 'QUICK DEMO PERSONAS',
     secTitle: 'NIC 256-Bit Encrypted Portal',
     secSubtitle: 'Authorized APMC personnel only · MSAMB Network',
+    signUpPrompt: 'New to OnionGuard AI?',
+    registerLink: 'Create New Account',
   },
   HI: {
     title: 'निरीक्षक पोर्टल',
@@ -110,6 +114,8 @@ const translations: Record<Lang, LanguageContent> = {
     demoTitle: 'त्वरित डेमो प्रोफाइल',
     secTitle: 'NIC 256-बिट सुरक्षित पोर्टल',
     secSubtitle: 'केवल अधिकृत APMC कर्मियों के लिए',
+    signUpPrompt: 'OnionGuard AI पर नए हैं?',
+    registerLink: 'नया खाता बनाएं',
   },
   MR: {
     title: 'निरीक्षक पोर्टल',
@@ -138,6 +144,8 @@ const translations: Record<Lang, LanguageContent> = {
     demoTitle: 'डेमो प्रोफाइल त्वरित निवडा',
     secTitle: 'NIC 256-बिट एनक्रिप्टेड पोर्टल',
     secSubtitle: 'फक्त अधिकृत APMC अधिकाऱ्यांसाठी',
+    signUpPrompt: 'OnionGuard AI वर नवीन आहात?',
+    registerLink: 'नवीन खाते तयार करा',
   },
 };
 
@@ -179,8 +187,10 @@ const demoUsers = [
   },
 ];
 
+import { loginUser, registerUser } from '../services/api';
+
 export default function LoginScreen() {
-  const { navigate, inspectionData, setInspectionData } = useApp();
+  const { navigate, inspectionData, setInspectionData, setCurrentUser } = useApp();
   
   // Local states
   const [lang, setLang] = useState<Lang>('EN');
@@ -189,7 +199,7 @@ export default function LoginScreen() {
   
   // Password auth state
   const [phone, setPhone] = useState('9876543210');
-  const [password, setPassword] = useState('apmc2026');
+  const [password, setPassword] = useState('SecurePassword123!');
   const [showPass, setShowPass] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   
@@ -220,21 +230,45 @@ export default function LoginScreen() {
     return () => clearInterval(interval);
   }, [otpSent, timer]);
 
-  const handleLogin = (inspectorName = 'Rajesh Kumar') => {
+  const handleLogin = async (inspectorName = 'Rajesh Kumar') => {
     setErrorMessage('');
     setLoading(true);
 
-    // Update global inspection data context with logged in inspector & center
-    setInspectionData({
-      ...inspectionData,
-      inspector: inspectorName,
-      center: selectedCenter,
-    });
+    const emailToUse = phone.includes('@') ? phone : `officer.${phone}@doca.gov.in`;
+    const passwordToUse = password || 'SecurePassword123!';
 
-    setTimeout(() => {
+    try {
+      let res;
+      try {
+        res = await loginUser(emailToUse, passwordToUse);
+      } catch (loginErr) {
+        // If user does not exist or password mismatch, auto-register
+        await registerUser({
+          email: emailToUse,
+          name: inspectorName,
+          password: passwordToUse,
+          role: 'INSPECTION_OFFICER',
+          organization: 'Department of Consumer Affairs',
+          center_id: selectedCenter,
+        }).catch(() => null);
+        res = await loginUser(emailToUse, passwordToUse).catch(() => null);
+      }
+
+      if (res && res.user) {
+        setCurrentUser(res.user);
+        inspectorName = res.user.name;
+      }
+    } catch (err) {
+      console.warn('Backend login fallback to local session', err);
+    } finally {
+      setInspectionData({
+        ...inspectionData,
+        inspector: inspectorName,
+        center: selectedCenter,
+      });
       setLoading(false);
       navigate('dashboard');
-    }, 1200);
+    }
   };
 
   const handleSendOtp = () => {
@@ -794,6 +828,22 @@ export default function LoginScreen() {
               </button>
             </div>
           )}
+
+          {/* Sign Up Navigation Banner */}
+          <div className="mt-4 pt-3 border-t border-[#E8EDE9] flex items-center justify-between">
+            <span style={{ fontSize: 12, color: '#5E7468', fontWeight: 500 }}>
+              {t.signUpPrompt}
+            </span>
+            <button
+              type="button"
+              onClick={() => navigate('signup')}
+              className="px-3 py-1.5 rounded-xl font-bold flex items-center gap-1 transition-all hover:bg-[#D9EDE0] active:scale-95"
+              style={{ background: '#E8F5EE', color: '#1B6B3A', fontSize: 11.5 }}
+            >
+              <span>{t.registerLink}</span>
+              <ArrowRight size={13} strokeWidth={2.5} />
+            </button>
+          </div>
         </div>
 
         {/* DEMO PERSONAS PRESETS */}

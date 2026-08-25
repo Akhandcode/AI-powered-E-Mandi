@@ -64,13 +64,21 @@ async def custom_redoc_html():
 
 
 @app.get("/")
+@app.get("/api/v1")
+@app.get("/api/v1/")
 def root():
     return {
         "success": True,
-        "message": "AI-Powered E-Mandi Onion Quality Assessment API is active",
+        "message": "AI-Powered E-Mandi Onion Quality Assessment API v1 is active",
         "problem_statement": "SIH 26031 - Quality assessment & grading of onions",
         "version": settings.app_version,
-        "docs_url": "/docs"
+        "docs_url": "/docs",
+        "endpoints": {
+            "auth": "/api/v1/auth",
+            "lots": "/api/v1/lots",
+            "reports": "/api/v1/reports",
+            "market": "/api/v1/market"
+        }
     }
 
 

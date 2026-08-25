@@ -26,7 +26,7 @@ import BottomNav from '../components/BottomNav';
 import StatusBar from '../components/StatusBar';
 
 export default function ProfileScreen() {
-  const { navigate, inspectionData } = useApp();
+  const { navigate, inspectionData, currentUser } = useApp();
 
   // Local interactive states
   const [offlineSync, setOfflineSync] = useState(true);
@@ -35,12 +35,13 @@ export default function ProfileScreen() {
   const [showSignOutModal, setShowSignOutModal] = useState(false);
   const [showCertModal, setShowCertModal] = useState(false);
 
-  // Inspector fallback values from context or demo
-  const inspectorName = inspectionData.inspector || 'Rajesh Kumar';
-  const centerName = inspectionData.center || 'APMC Nashik — Center 3';
+  // Inspector dynamic values from API context
+  const inspectorName = currentUser?.name || inspectionData.inspector || 'Inspection Officer';
+  const centerName = currentUser?.center_id ? `APMC Center ${currentUser.center_id}` : inspectionData.center || 'APMC Nashik — Center 3';
+  const inspectorRole = currentUser?.role ? currentUser.role.replace('_', ' ') : 'Senior APMC Quality Inspector';
   const initials = inspectorName
     .split(' ')
-    .map((n) => n[0])
+    .map((n: string) => n[0])
     .join('')
     .substring(0, 2)
     .toUpperCase();

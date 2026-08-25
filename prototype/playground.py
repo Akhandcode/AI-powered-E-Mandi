@@ -17,7 +17,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from data.loaders import QUALITY_WEIGHTS, synthetic_prices
+from data.loaders import QUALITY_WEIGHTS, load_agmarknet_prices, synthetic_prices
 from pricing import forecast as fc
 from pricing import router as rt
 

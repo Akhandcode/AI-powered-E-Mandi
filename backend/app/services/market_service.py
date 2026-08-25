@@ -7,15 +7,38 @@ ROOT_DIR = Path(__file__).resolve().parent.parent.parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-try:
-    from router import route_lot, LotQuality
-    HAS_ROUTER = True
-except ImportError:
-    HAS_ROUTER = False
-
 from app.models.lot import InspectionLot
 from app.models.assessment import GradingResult
 from app.schemas.market import MarketRecommendationResponse, ChannelRecommendation
+
+
+# Government Agmarknet & DoCA Commodity Pricing Parameters
+COMMODITY_GOVT_PRICING = {
+    "Onion": {
+        "base_spot_price": 26.50,
+        "forecast_7d_price": 29.80,
+        "doca_buffer_price": 32.00,
+        "processing_price": 18.00,
+        "buffer_channel_name": "DoCA Buffer Procurement (NAFED/NCCF)",
+        "processing_channel_name": "Onion Dehydration & Processing Industry",
+    },
+    "Tomato": {
+        "base_spot_price": 22.00,
+        "forecast_7d_price": 25.50,
+        "doca_buffer_price": 28.00,
+        "processing_price": 13.00,
+        "buffer_channel_name": "Institutional / Direct FPO Procurement",
+        "processing_channel_name": "Tomato Puree & Processing Industry",
+    },
+    "Potato": {
+        "base_spot_price": 15.00,
+        "forecast_7d_price": 16.80,
+        "doca_buffer_price": 19.00,
+        "processing_price": 10.50,
+        "buffer_channel_name": "Govt Cold Chain / Institutional Buffer",
+        "processing_channel_name": "Potato Starch & Chips Processing Industry",
+    },
+}
 
 
 class MarketService:
@@ -33,33 +56,39 @@ class MarketService:
                 detail="Lot has not been graded yet. Run AI assessment first."
             )
 
-        # Base Mandi benchmark price for onions (INR per kg)
-        base_price_per_kg = 28.50
-        forecast_7d_price_per_kg = 31.20
+        commodity = lot.commodity or "Onion"
+        price_cfg = COMMODITY_GOVT_PRICING.get(commodity, COMMODITY_GOVT_PRICING["Onion"])
+
+        base_price_per_kg = price_cfg["base_spot_price"]
+        forecast_7d_price_per_kg = price_cfg["forecast_7d_price"]
         trend = "UPWARD"
         action = "WAIT_7_DAYS" if grading.grade_a_percentage >= 65.0 else "SELL_IMMEDIATELY"
 
+        grade_a_price = price_cfg["doca_buffer_price"]
+        spot_price = price_cfg["base_spot_price"]
+        proc_price = price_cfg["processing_price"]
+
         channels = [
             ChannelRecommendation(
-                channel="DoCA Buffer Procurement (NAFED/NCCF)",
+                channel=price_cfg["buffer_channel_name"],
                 recommended_pct=round(grading.grade_a_percentage, 1),
-                expected_price_per_kg=32.00,
-                net_return_inr=round((lot.total_weight_kg * (grading.grade_a_percentage / 100)) * 32.00, 2),
-                description="Government procurement for Grade A sound onions at MSP benchmark."
+                expected_price_per_kg=grade_a_price,
+                net_return_inr=round((lot.total_weight_kg * (grading.grade_a_percentage / 100)) * grade_a_price, 2),
+                description=f"Government procurement for Grade A sound {commodity.lower()}s at MSP/DoCA benchmark."
             ),
             ChannelRecommendation(
-                channel="APMC Mandi Spot Market",
+                channel=f"APMC Mandi Spot Market ({lot.procurement_center or 'Local Mandi'})",
                 recommended_pct=round(max(0, 100 - grading.grade_a_percentage - grading.rotten_pct), 1),
-                expected_price_per_kg=26.50,
-                net_return_inr=round((lot.total_weight_kg * (max(0, 100 - grading.grade_a_percentage - grading.rotten_pct) / 100)) * 26.50, 2),
-                description="Direct wholesale sale in local Mandi for Grade B/C onions."
+                expected_price_per_kg=spot_price,
+                net_return_inr=round((lot.total_weight_kg * (max(0, 100 - grading.grade_a_percentage - grading.rotten_pct) / 100)) * spot_price, 2),
+                description=f"Direct wholesale auction in local Mandi for standard wholesale {commodity.lower()}s."
             ),
             ChannelRecommendation(
-                channel="Onion Dehydration & Processing Industry",
+                channel=price_cfg["processing_channel_name"],
                 recommended_pct=round(grading.urs_percentage, 1),
-                expected_price_per_kg=18.00,
-                net_return_inr=round((lot.total_weight_kg * (grading.urs_percentage / 100)) * 18.00, 2),
-                description="Bulk channel for sprouted/undersized onions suited for powder & paste."
+                expected_price_per_kg=proc_price,
+                net_return_inr=round((lot.total_weight_kg * (grading.urs_percentage / 100)) * proc_price, 2),
+                description=f"Bulk channel for sprouted/blemished {commodity.lower()}s suited for processing."
             )
         ]
 

@@ -4,6 +4,7 @@ import type { Screen } from './types';
 
 import SplashScreen from './screens/SplashScreen';
 import LoginScreen from './screens/LoginScreen';
+import SignUpScreen from './screens/SignUpScreen';
 import DashboardScreen from './screens/DashboardScreen';
 import NewInspectionScreen from './screens/NewInspectionScreen';
 import CameraScreen from './screens/CameraScreen';
@@ -32,7 +33,7 @@ function AppShell() {
   const { screen, navigate } = useApp();
 
   const isAuthOrSplash =
-    screen === 'splash' || screen === 'login';
+    screen === 'splash' || screen === 'login' || screen === 'signup';
 
   const renderScreen = () => {
     switch (screen) {
@@ -41,6 +42,9 @@ function AppShell() {
 
       case 'login':
         return <LoginScreen />;
+
+      case 'signup':
+        return <SignUpScreen />;
 
       case 'dashboard':
         return <DashboardScreen />;

@@ -27,6 +27,7 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).parent))
 
 from data.loaders import (CONDITIONS, QUALITY_WEIGHTS, synthetic_cpi,
+                          load_image_dataset, load_agmarknet_prices,
                           synthetic_images, synthetic_prices, _render_unit)
 from lot.estimator import estimate_lot, lqi_from_theta
 from pricing import forecast as fc

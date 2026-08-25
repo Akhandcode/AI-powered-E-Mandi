@@ -59,6 +59,9 @@ def run_tests():
     # 3. Create Sample Inspection Lot
     print("\n[3/5] Creating Sample Onion Inspection Lot...")
     import uuid
+    from PIL import Image as PILImage
+    import numpy as np
+
     lot_num = f"LOT-ONION-2026-NASHIK-{uuid.uuid4().hex[:6].upper()}"
     lot = InspectionLot(
         lot_number=lot_num,
@@ -72,6 +75,20 @@ def run_tests():
         created_by_id=user.id
     )
     db.add(lot)
+    db.commit()
+    db.refresh(lot)
+
+    # Attach sample produce images
+    uploads_dir = Path(__file__).resolve().parent / "static" / "uploads"
+    uploads_dir.mkdir(parents=True, exist_ok=True)
+    test_img_path = uploads_dir / f"test_onion_{uuid.uuid4().hex[:6]}.jpg"
+    # Create valid onion-like warm hue image (r > 80, r > b*1.1, r > g*1.02)
+    img_data = np.full((64, 64, 3), [180, 110, 60], dtype=np.uint8)
+    PILImage.fromarray(img_data).save(test_img_path)
+
+    from app.models.lot import LotImage
+    img_rec = LotImage(lot_id=lot.id, file_name=test_img_path.name, file_path=str(test_img_path))
+    db.add(img_rec)
     db.commit()
     db.refresh(lot)
 

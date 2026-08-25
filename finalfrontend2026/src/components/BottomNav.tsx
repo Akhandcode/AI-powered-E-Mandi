@@ -9,7 +9,11 @@ const tabs: { label: string; icon: typeof LayoutDashboard; screen: Screen }[] = 
   { label: 'Profile', icon: User, screen: 'profile' },
 ];
 
-export default function BottomNav() {
+interface BottomNavProps {
+  activeTab?: string;
+}
+
+export default function BottomNav({ activeTab }: BottomNavProps = {}) {
   const { screen, navigate } = useApp();
 
   const activeScreen = (s: Screen) => {

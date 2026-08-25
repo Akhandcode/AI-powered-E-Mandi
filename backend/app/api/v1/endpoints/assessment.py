@@ -26,13 +26,17 @@ def assess_lot_quality(
     if not lot:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Inspection lot not found")
 
-    result = AIService.assess_onion_lot(
-        db=db,
-        lot=lot,
-        sample_size=req.sample_size,
-        use_debias=req.use_debias
-    )
-    return result
+    try:
+        result = AIService.assess_onion_lot(
+            db=db,
+            lot=lot,
+            sample_size=req.sample_size,
+            use_debias=req.use_debias
+        )
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
 
 
 @router.get("/lots/{lot_id}/assessment", response_model=GradingResultResponse)

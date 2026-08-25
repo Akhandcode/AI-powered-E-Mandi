@@ -38,16 +38,16 @@ and your photo dataset at the two seams marked in the code.</div>
 <h2>1 · Recommendation</h2>
 <div class="rec"><div class="b">SELL NOW → Middleman / commission agent</div>
 <div style="margin-top:6px;font-size:14px">
-Expected net ₹131,368
-&nbsp;·&nbsp; 90% CI ₹126,892 – ₹135,488
-&nbsp;·&nbsp; edge over the alternative ₹54,095</div></div>
+Expected net ₹130,255
+&nbsp;·&nbsp; 90% CI ₹125,817 – ₹134,341
+&nbsp;·&nbsp; edge over the alternative ₹54,750</div></div>
 
 <div class="cards">
 <div class="card"><div class="l">Lot Quality Index</div><div class="v">0.700</div>
 <div class="n">90% CI 0.624–0.772 · truth 0.762</div></div>
 <div class="card"><div class="l">Spot modal price</div><div class="v">₹3,051</div>
 <div class="n">per quintal, today</div></div>
-<div class="card"><div class="l">7-day forecast</div><div class="v">₹3,383</div>
+<div class="card"><div class="l">7-day forecast</div><div class="v">₹3,354</div>
 <div class="n">σ ≈ ₹578 out-of-sample · best: naive</div></div>
 <div class="card"><div class="l">Unsellable share</div>
 <div class="v">12.0%</div>
@@ -73,7 +73,7 @@ relative to the lot — that flattening point is your recommended sampling proto
 
 <h2>4 · Stage C1 — price forecast, rolling-origin backtest</h2>
 <table><tr><th>Model</th><th>MAE</th><th>RMSE</th><th>MAPE</th><th>MASE</th><th>Dir. acc</th></tr>
-<tr class=best><td>naive</td><td>358.4</td><td>578.8</td><td>15.6%</td><td>1.000</td><td>—</td></tr><tr><td>snaive</td><td>469.8</td><td>694.0</td><td>21.4%</td><td>1.311</td><td>52%</td></tr><tr><td>ridge</td><td>365.8</td><td>565.4</td><td>16.2%</td><td>1.021</td><td>61%</td></tr><tr><td>gbm</td><td>420.1</td><td>627.5</td><td>17.9%</td><td>1.172</td><td>63%</td></tr></table>
+<tr class=best><td>naive</td><td>358.4</td><td>578.8</td><td>15.6%</td><td>1.000</td><td>—</td></tr><tr><td>snaive</td><td>469.8</td><td>694.0</td><td>21.4%</td><td>1.311</td><td>52%</td></tr><tr><td>ridge</td><td>365.8</td><td>565.4</td><td>16.2%</td><td>1.021</td><td>61%</td></tr><tr><td>gbm</td><td>417.8</td><td>624.7</td><td>17.8%</td><td>1.166</td><td>63%</td></tr></table>
 <p style="font-size:12.5px;color:#6b6b66;margin-top:10px">MASE &lt; 1 means the model
 beats the naive <code>ŷ = y<sub>t</sub></code> baseline. If your real-data MASE lands
 near or above 1, report it honestly — the project's contribution is quality-conditioned
@@ -82,13 +82,13 @@ routing, not beating the market.</p>
 
 <h2>5 · Stage C2 — channel economics</h2>
 <table><tr><th>Channel</th><th>Gross ₹/qtl</th><th>Spoilage (qtl)</th><th>Commission</th>
-<th>Logistics</th><th>Net</th><th>Net ₹/qtl</th></tr><tr class=best><td>Middleman / commission agent</td><td>₹2,543</td><td>1.8</td><td>₹2,704</td><td>₹1,100</td><td><b>₹131,368</b></td><td>₹2,389</td></tr><tr><td>Wholesaler (mandi)</td><td>₹2,565</td><td>3.6</td><td>₹9,227</td><td>₹9,900</td><td><b>₹112,519</b></td><td>₹2,046</td></tr><tr><td>Retailer / vendor</td><td>₹2,873</td><td>10.1</td><td>₹0</td><td>₹21,450</td><td><b>₹107,008</b></td><td>₹1,946</td></tr><tr><td>Direct consumer / FPO</td><td>₹3,179</td><td>15.8</td><td>₹0</td><td>₹31,900</td><td><b>₹92,416</b></td><td>₹1,680</td></tr></table>
+<th>Logistics</th><th>Net</th><th>Net ₹/qtl</th></tr><tr class=best><td>Middleman / commission agent</td><td>₹2,522</td><td>1.8</td><td>₹2,681</td><td>₹1,100</td><td><b>₹130,255</b></td><td>₹2,368</td></tr><tr><td>Wholesaler (mandi)</td><td>₹2,544</td><td>3.6</td><td>₹9,150</td><td>₹9,900</td><td><b>₹111,491</b></td><td>₹2,027</td></tr><tr><td>Retailer / vendor</td><td>₹2,848</td><td>10.1</td><td>₹0</td><td>₹21,450</td><td><b>₹105,929</b></td><td>₹1,926</td></tr><tr><td>Direct consumer / FPO</td><td>₹3,152</td><td>15.8</td><td>₹0</td><td>₹31,900</td><td><b>₹91,372</b></td><td>₹1,661</td></tr></table>
 
 <p style="font-size:13px;margin-top:16px"><b>Capacity-aware split.</b> The top channel
 usually cannot absorb the whole lot, so allocate greedily by net rate:</p>
-<table><tr><th>Channel</th><th>Allocated</th><th>Net</th></tr><tr><td>Middleman / commission agent</td><td>55.0 qtl</td><td>₹131,368</td></tr>
+<table><tr><th>Channel</th><th>Allocated</th><th>Net</th></tr><tr><td>Middleman / commission agent</td><td>55.0 qtl</td><td>₹130,255</td></tr>
 <tr class="best"><td><b>Total</b></td><td><b>55 qtl</b></td>
-<td><b>₹131,368</b></td></tr></table>
+<td><b>₹130,255</b></td></tr></table>
 <p style="font-size:13px;margin-top:8px">Splitting beats single-channel by
 <b>₹0</b> on this lot.</p>
 
@@ -100,8 +100,8 @@ optimal because spoilage over their longer time-to-sale eats the premium.</p>
 <h2>6 · Sell now vs wait 7 days</h2>
 <table>
 <tr><td>Net if sold today</td><td><b>₹118,380</b></td></tr>
-<tr><td>Net if held (expected)</td><td>₹76,154</td></tr>
-<tr><td>Net if held (risk-adjusted)</td><td>₹64,285</td></tr>
+<tr><td>Net if held (expected)</td><td>₹75,499</td></tr>
+<tr><td>Net if held (risk-adjusted)</td><td>₹63,629</td></tr>
 <tr><td>Spoilage over the wait</td><td>20.8 qtl</td></tr>
 <tr><td>LQI after waiting</td><td>0.581</td></tr>
 <tr class="best"><td><b>Decision</b></td><td><b>SELL NOW</b></td></tr>

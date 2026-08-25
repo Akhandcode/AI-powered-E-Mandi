@@ -22,7 +22,7 @@ def create_inspection_lot(
     current_user: User = Depends(get_current_user)
 ):
     """Create a new onion inspection lot at a procurement center."""
-    lot_number = f"LOT-ONION-{uuid.uuid4().hex[:8].upper()}"
+    lot_number = f"LOT-{lot_in.commodity.upper()}-{uuid.uuid4().hex[:8].upper()}"
     lot = InspectionLot(
         lot_number=lot_number,
         procurement_center=lot_in.procurement_center,

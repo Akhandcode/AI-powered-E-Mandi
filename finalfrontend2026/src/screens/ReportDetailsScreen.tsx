@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, Download, Share2, CheckCircle, AlertTriangle, CheckCircle2, FileCheck } from 'lucide-react';
+import { ArrowLeft, Download, Share2, CheckCircle, AlertTriangle, CheckCircle2, FileCheck, Trash2, X } from 'lucide-react';
 import { useApp } from '../context';
 import StatusBar from '../components/StatusBar';
 import BottomNav from '../components/BottomNav';
@@ -7,6 +7,7 @@ import BottomNav from '../components/BottomNav';
 export default function ReportDetailsScreen() {
   const { navigate, inspectionData } = useApp();
   const [downloaded, setDownloaded] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const handleDownloadPDF = () => {
     const batchId = 'APMC-NAS-4721';
@@ -74,6 +75,11 @@ export default function ReportDetailsScreen() {
     setDownloaded(true);
   };
 
+  const handleDeleteReport = () => {
+    setShowDeleteModal(false);
+    navigate('history');
+  };
+
   return (
     <div className="absolute inset-0 flex flex-col" style={{ background: '#F4F7F5' }}>
       <div style={{ background: 'linear-gradient(160deg, #134D2B 0%, #1B6B3A 100%)' }}>
@@ -93,6 +99,14 @@ export default function ReportDetailsScreen() {
             </p>
           </div>
           <button
+            onClick={() => setShowDeleteModal(true)}
+            className="flex items-center justify-center rounded-xl bg-red-500/20 hover:bg-red-500/30 border border-red-400/40 text-red-200 transition-colors"
+            style={{ width: 40, height: 40 }}
+            title="Delete Report"
+          >
+            <Trash2 size={18} strokeWidth={2} />
+          </button>
+          <button
             onClick={handleDownloadPDF}
             className="flex items-center justify-center rounded-xl"
             style={{ width: 40, height: 40, background: 'rgba(255,255,255,0.12)' }}
@@ -102,7 +116,7 @@ export default function ReportDetailsScreen() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto pb-28">
+      <div className="flex-1 overflow-y-auto pb-32">
         {/* Sample image with detections or AI Vector Banner */}
         <div className="relative mx-4 mt-4 rounded-2xl overflow-hidden shadow-sm" style={{ height: 160, background: 'linear-gradient(135deg, #0B2515 0%, #134D2B 100%)' }}>
           {inspectionData.capturedImage ? (
@@ -259,22 +273,76 @@ export default function ReportDetailsScreen() {
           </div>
         )}
 
-        <button
-          onClick={handleDownloadPDF}
-          className="w-full flex items-center justify-center gap-2 rounded-2xl font-bold text-white transition-all active:scale-[0.98]"
-          style={{
-            height: 54,
-            fontSize: 15,
-            background: 'linear-gradient(135deg, #1B6B3A 0%, #2E8B57 100%)',
-            boxShadow: '0 4px 16px rgba(27,107,58,0.28)',
-          }}
-        >
-          {downloaded ? <FileCheck size={19} /> : <Download size={18} strokeWidth={2.2} />}
-          <span>{downloaded ? 'Download Report File Again' : 'Download PDF / Analysis File'}</span>
-        </button>
+        <div className="flex gap-2 mb-2.5">
+          <button
+            onClick={handleDownloadPDF}
+            className="flex-1 flex items-center justify-center gap-2 rounded-2xl font-bold text-white transition-all active:scale-[0.98]"
+            style={{
+              height: 52,
+              fontSize: 14,
+              background: 'linear-gradient(135deg, #1B6B3A 0%, #2E8B57 100%)',
+              boxShadow: '0 4px 16px rgba(27,107,58,0.28)',
+            }}
+          >
+            {downloaded ? <FileCheck size={18} /> : <Download size={18} strokeWidth={2.2} />}
+            <span>{downloaded ? 'Downloaded' : 'Download Report'}</span>
+          </button>
+
+          <button
+            onClick={() => setShowDeleteModal(true)}
+            className="px-4 flex items-center justify-center gap-1.5 rounded-2xl font-bold text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 transition-colors"
+            style={{ height: 52, fontSize: 14 }}
+          >
+            <Trash2 size={18} />
+            <span>Delete</span>
+          </button>
+        </div>
       </div>
+
+      {/* ⚠️ Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-5 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl relative border border-slate-100">
+            <button
+              onClick={() => setShowDeleteModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1"
+            >
+              <X size={20} />
+            </button>
+
+            <div className="w-16 h-16 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-center mx-auto mb-4 text-red-500">
+              <Trash2 size={32} />
+            </div>
+
+            <h3 className="text-slate-900 font-extrabold text-lg mb-1.5">
+              Delete Inspection Report?
+            </h3>
+
+            <p className="text-slate-500 text-xs mb-6 leading-relaxed">
+              Are you sure you want to delete report <strong className="text-slate-800">OG-20260823-047</strong>? This action is permanent and cannot be undone.
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="flex-1 py-3 rounded-2xl bg-slate-100 text-slate-700 font-bold text-xs hover:bg-slate-200"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={handleDeleteReport}
+                className="flex-1 py-3 rounded-2xl bg-red-600 text-white font-bold text-xs shadow-lg hover:bg-red-700 active:scale-95 transition-transform"
+              >
+                Delete Report
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <BottomNav />
     </div>
   );
 }
+
